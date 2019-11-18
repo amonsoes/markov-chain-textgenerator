@@ -1,8 +1,8 @@
-import collections
 import numpy as np
 import sklearn as sk
 import nltk
 import json
+import os
 
 from sklearn.feature_extraction.text import CountVectorizer as cv
 from scipy.sparse import csr_matrix as csr
@@ -12,15 +12,30 @@ NGRAM_RANGE = (1,3)
 
 class Dataset:
     
-    def __init__(self, freq_mat, vocab, id_mat):
+    def __init__(self, freq_mat, vocab, doc_dict):
         self.freq_mat = freq_mat
         self.vocab = vocab
-        self.id_mat = id_mat
+        self.doc_dict = doc_dict
         
     @classmethod
-    def make_dataset(cls,textfiles):
-        pass
+    def load_dataset(cls, path):
+        ls = []
+        for _, _, filenames in os.walk(path):
+            for file in filenames:
+                if file.endswith(".json"):
+                    ls.append(Datafile.from_json(path))
+        return cls.make_dataset(ls)
 
+    @classmethod
+    def make_dataset(cls, lst):
+        textfiles = [datafile.json.text for datafile in lst]
+        cv = cv.fit(textfiles,ngram_range=NGRAM_RANGE)
+        freq_mat = cv.transform(textfiles)
+        doc_dict = {datafile.id:datafile for datafile in lst}
+        vocab =  cv.get_feature_names()
+        return cls(freq_mat,vocab,doc_dict)
+        
+            
 
 class Datafile:
     
